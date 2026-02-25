@@ -166,18 +166,7 @@
             <groupId>org.codehaus.plexus</groupId>
             <artifactId>plexus-utils</artifactId>
         </dependency>
-        <!-- plexus sec dispatcher is needed to support encrypted passwords -->
-        <dependency>
-            <groupId>org.codehaus.plexus</groupId>
-            <artifactId>plexus-sec-dispatcher</artifactId>
-            <version>${version.org.codehaus.plexus-sec-dispatcher}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.codehaus.plexus</groupId>
-                    <artifactId>plexus-utils</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+
 
         <!-- Test dependencies -->
 
@@ -407,10 +396,6 @@
                         </filter>
                     </filters>
                     <relocations>
-                        <relocation>
-                            <pattern>org.sonatype.</pattern>
-                            <shadedPattern>shaded.org.sonatype.</shadedPattern>
-                        </relocation>
                         <relocation>
                         <pattern>org.jsoup.</pattern>
                             <shadedPattern>shaded.org.jsoup.</shadedPattern>

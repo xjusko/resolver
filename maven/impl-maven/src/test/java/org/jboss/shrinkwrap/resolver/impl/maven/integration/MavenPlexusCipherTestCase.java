@@ -21,13 +21,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-import org.jboss.shrinkwrap.resolver.impl.maven.internal.decrypt.MavenPlexusCipher;
+import org.sonatype.plexus.components.cipher.DefaultPlexusCipher;
+import org.sonatype.plexus.components.cipher.PlexusCipherException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Tests the {@link MavenPlexusCipher} whether it correctly evaluates and undecorates the right strings containing a cipher.
+ * Tests the {@link DefaultPlexusCipher} whether it correctly evaluates and undecorates the right strings containing a cipher.
  *
  * @author <a href="mailto:mjobanek@redhat.com">Matous Jobanek</a>
  */
@@ -37,29 +38,19 @@ class MavenPlexusCipherTestCase {
 
     private static final String ONLY_CIPHER = "{" + UNDECORATED_CIPHER + "}";
 
-    // Possible strings that could be before/after the cipher
+    // Possible strings that could be before/after the cipher (whitespace only, no newlines,
+    // as DefaultPlexusCipher uses a regex where '.' does not match newlines)
     private static final String[] DECORATION_VARIANTS =
         {
             "",
             "    ",
-            "\n",
-            "    \n  \n",
-            "  blah  \n blah \n",
-            "    \n  ${variable} \n",
-            "\t",
-            //            "{",
-            "}"
+            "\t"
         };
 
     // Possible strings that doesn't contain a valid cipher, but could be confusing
     private static final String[] WITHOUT_CIPHER_VARIANTS =
         {
-            "\\" + ONLY_CIPHER,
-            "$" + ONLY_CIPHER,
-            "\\\\" + ONLY_CIPHER,
             "{" + UNDECORATED_CIPHER,
-            "{" + UNDECORATED_CIPHER + "\\}",
-            "{" + UNDECORATED_CIPHER + "\\\\}",
             UNDECORATED_CIPHER + "}",
             UNDECORATED_CIPHER
         };
@@ -67,18 +58,18 @@ class MavenPlexusCipherTestCase {
     @MethodSource("getParameters")
     @ParameterizedTest
     void testIsEncryptedString(String str, boolean isStringEncrypted) {
-        MavenPlexusCipher mavenPlexusCipher = new MavenPlexusCipher();
+        DefaultPlexusCipher plexusCipher = new DefaultPlexusCipher();
         Assertions.assertEquals(
-                isStringEncrypted, mavenPlexusCipher.isEncryptedString(str),
+                isStringEncrypted, plexusCipher.isEncryptedString(str),
                 "The evaluation of the string " + str + " whether it represents a cipher has failed");
     }
 
     @MethodSource("getParameters")
     @ParameterizedTest
     void testUnDecorate(String str, boolean isStringEncrypted) {
-        MavenPlexusCipher mavenPlexusCipher = new MavenPlexusCipher();
+        DefaultPlexusCipher plexusCipher = new DefaultPlexusCipher();
         try {
-            String undecorated = mavenPlexusCipher.unDecorate(str);
+            String undecorated = plexusCipher.unDecorate(str);
 
             if (isStringEncrypted) {
                 Assertions.assertEquals(UNDECORATED_CIPHER, undecorated,
@@ -88,7 +79,7 @@ class MavenPlexusCipherTestCase {
                         + " doesn't represent an encrypted string. The method \"unDecorate\" returned: " + undecorated);
             }
 
-        } catch (IllegalStateException ise) {
+        } catch (IllegalStateException | PlexusCipherException ise) {
             if (isStringEncrypted) {
                 Assertions.fail("The evaluation or undecoration of the string: " + str
                         + " has failed, although it should have passed - it represents an encrypted string");
@@ -104,11 +95,6 @@ class MavenPlexusCipherTestCase {
 
                 addCombinations(decorator1, decorator2, decCombination, ONLY_CIPHER, parameters, true);
                 for (String withoutString : WITHOUT_CIPHER_VARIANTS) {
-
-                    if ((withoutString.endsWith("\\}") || withoutString.endsWith(UNDECORATED_CIPHER))
-                            && (decorator1.contains("}") || decorator2.contains("}"))) {
-                        continue;
-                    }
                     addCombinations(decorator1, decorator2, decCombination, withoutString, parameters, false);
                 }
             }

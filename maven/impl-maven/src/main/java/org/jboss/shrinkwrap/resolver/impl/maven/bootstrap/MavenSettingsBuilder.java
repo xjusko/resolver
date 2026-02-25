@@ -40,7 +40,9 @@ import org.apache.maven.settings.crypto.SettingsDecrypter;
 import org.apache.maven.settings.crypto.SettingsDecryptionRequest;
 import org.apache.maven.settings.crypto.SettingsDecryptionResult;
 import org.jboss.shrinkwrap.resolver.api.InvalidConfigurationFileException;
-import org.jboss.shrinkwrap.resolver.impl.maven.internal.decrypt.MavenSettingsDecrypter;
+import org.apache.maven.settings.crypto.DefaultSettingsDecrypter;
+import org.sonatype.plexus.components.cipher.DefaultPlexusCipher;
+import org.sonatype.plexus.components.sec.dispatcher.DefaultSecDispatcher;
 
 /**
  * Builds Maven settings from arbitrary settings.xml file
@@ -225,7 +227,10 @@ public class MavenSettingsBuilder {
             securitySettings = new File(altSecuritySettings);
         }
 
-        SettingsDecrypter decrypter = new MavenSettingsDecrypter(securitySettings);
+        DefaultPlexusCipher cipher = new DefaultPlexusCipher();
+        DefaultSecDispatcher dispatcher = new DefaultSecDispatcher(cipher);
+        dispatcher.setConfigurationFile(securitySettings.getAbsolutePath());
+        SettingsDecrypter decrypter = new DefaultSettingsDecrypter(dispatcher);
         SettingsDecryptionRequest request = new DefaultSettingsDecryptionRequest(settings);
         SettingsDecryptionResult result = decrypter.decrypt(request);
 
